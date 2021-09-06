@@ -1,0 +1,51 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage[left=1.5cm, right=1.5cm, bottom=2cm, top=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{natbib}
+\newcommand{\given}{\,|\,}
+\newcommand{\asin}{\sinh^{-1}}
+
+\title{}
+\author{Brendon J. Brewer}
+\date{}
+
+\begin{document}
+\maketitle
+
+%\abstract{}
+
+% Need this after the abstract
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+
+Let the squashing function be
+\begin{align}
+S(x)
+    &= \asin(x) \\
+    &= \log\left(x + \sqrt{x^2 + 1}\right).    
+\end{align}
+
+There is a trig identity for addition:
+\begin{align}
+\asin u + \asin v &= \asin\left(u\sqrt{1+v^2} + v\sqrt{1+u^2}\right).
+\end{align}
+If we associate $u\sqrt{1+v^2}$ with the existing trending score
+and $v\sqrt{1+u^2}$ with the spike mass, then the left hand side may be used
+to compute the updated trending score, once we solve for $u$ and $v$.
+
+Let $x$ be the old trending score and $m$ be the spike mass before scaling.
+Then we have
+\begin{align}
+x &= u\sqrt{1+v^2} \\
+m\exp(t/L) &= v\sqrt{1+u^2}.
+\end{align}
+We must now solve for $u$ and $v$ in terms of $x$ and $m$.
+
+\end{document}
+
