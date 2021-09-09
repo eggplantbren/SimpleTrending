@@ -1,6 +1,7 @@
 import math
 
-# NOTE: Use deweys
+# NOTE: Use deweys for amounts, except in the soften() function where the conversion
+# to LBC is assumed to have already occurred.
 
 HALF_LIFE = 400
 LOG_TWO = math.log(2.0)
