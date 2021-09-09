@@ -26,43 +26,16 @@
 
 Let the squashing function be
 \begin{align}
-S(x)
-    &= \asin(x) \\
-    &= \log\left(x + \sqrt{x^2 + 1}\right).    
+S(x) &=
+    \left\{
+        \begin{array}{lr}
+            \log (1 + x), & \textnormal{if } x \geq 0, \\
+            -\log(1 - x), & \textnormal{otherwise}.
+        \end{array}
+    \right.
 \end{align}
-
-There is a trig identity for addition:
-\begin{align}
-\asin u + \asin v &= \asin\left(u\sqrt{1+v^2} + v\sqrt{1+u^2}\right).
-\end{align}
-If we associate $u\sqrt{1+v^2}$ with the existing trending score
-and $v\sqrt{1+u^2}$ with the spike mass, then the left hand side may be used
-to compute the updated trending score, once we solve for $u$ and $v$.
-
-Let $x$ be the old trending score and $m$ be the spike mass before scaling.
-Then we have
-\begin{align}
-x &= u\sqrt{1+v^2} \label{eqn:first_simultaneous}\\
-m\exp(t/L) &= v\sqrt{1+u^2} \label{eqn:second_simultaneous}.
-\end{align}
-We must now solve for $u$ and $v$ in terms of $x$ and $m$.
-
-Rearranging Equations~\ref{eqn:first_simultaneous}
-and~\ref{eqn:second_simultaneous} respectively to make $v^2$ the subject,
-we get
-\begin{align}
-v^2 &= \frac{x^2}{u^2} - 1 \\
-v^2 &= \frac{m^2\exp(2t/L)}{1 + u^2}.
-\end{align}
-Equating these, we get
-\begin{align}
-\frac{x^2}{u^2} - 1 &= \frac{m^2\exp(2t/L)}{1 + u^2} \\
-\left(1 + u^2\right)\left(\frac{x^2}{u^2} - 1\right)
-    &= m^2\exp(2t/L) \\
-\left(1 + u^2\right)\left(x^2 - u^2\right)
-    &= u^2m^2\exp(2t/L) \\
-\end{align}
-
+Operations on the squashed grade can be defined in terms of logsumexp
+and logdiffexp, to avoid overflow.
 
 
 \end{document}
