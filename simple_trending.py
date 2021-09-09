@@ -181,18 +181,25 @@ def simulate():
     xs, ys = [], []
     xs.append(1.0)
     ys.append(claim.trending_score)
-    for height in range(2, 2000):
+    for height in range(2, 100001):
+
         if height == 20:
             claim.support_added(100.0*COIN, height)
+
+        if height == 500:
+            claim.support_abandoned(100.0*COIN, height)
+
         if height % 1000 == 0:
             claim.support_added(100.0*COIN, height)
 
         xs.append(height)
         ys.append(claim.trending_score)
+        print(height, claim.trending_score)
 
 
-    # Transform to exponential for viewing. Will blow up if simulation is too long.
+    # Transform first 10K blocks to exponential for viewing.
     xs, ys = np.array(xs), np.array(ys)
+    xs, ys = xs[0:10000], ys[0:10000]
     ys[ys >= 0.0] = np.exp(ys[ys >= 0.0]) - 1.0
     ys[ys <  0.0] = 1.0 - np.exp(-ys[ys < 0.0])
     ys /= 2.0**(xs/HALF_LIFE)
