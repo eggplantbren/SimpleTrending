@@ -1,37 +1,86 @@
-import bigfloat as bf
+import math
 
 # NOTE: Use deweys
 
 HALF_LIFE = 400
+LOG_TWO = math.log(2.0)
 
 def soften(lbc: float):
     assert lbc >= 0
     return lbc ** (1.0/3.0)
 
-CONTEXT = bf.Context(precision=64, emax=1000000)
-bf.setcontext(CONTEXT)
+def logsumexp(x, y):
+    top = max(x, y)
+    return top + math.log(math.exp(x - top) + math.exp(y - top))
+
+def logdiffexp(big, small):
+    assert big > small
+    return big + math.log(1.0 - math.exp(small - big))
+
+def squash(x):
+    if x < 0.0:
+        return -math.log(1.0 - x)
+    else:
+        return math.log(x + 1.0)
+
+def unsquash(x):
+    if x < 0.0:
+        return 1.0 - math.exp(-x)
+    else:
+        return math.exp(x) - 1.0
+
+
+def squashed_add(x, y):
+    """
+    squash(unsquash(x) + unsquash(y)) but avoiding overflow.
+    """
+
+    # Cases where the signs are the same
+    if x < 0.0 and y < 0.0:
+        return -logsumexp(-x, logdiffexp(-y, 0.0))
+    if x >= 0.0 and y >= 0.0:
+        return logsumexp(x, logdiffexp(y, 0.0))
+
+    # Where the signs differ
+    if x >= 0.0 and y < 0.0:
+        if abs(x) >= abs(y):
+            return logsumexp(0.0, logdiffexp(x, -y))
+        else:
+            return -logsumexp(0.0, logdiffexp(-y, x))
+    if x < 0.0 and y >= 0.0:
+        # Addition is commutative, hooray for new math
+        return squashed_add(y, x)
+
+    return None
+
+def squashed_multiply(x, y):
+    """
+    squash(unsquash(x)*unsquash(y)) but avoiding overflow.
+    """
+    sign = 1 if x*y >= 0.0 else -1
+    return sign*logsumexp(squash_to_log(abs(x)) + squash_to_log(abs(y)), 0.0)
+
+
+def log_to_squash(x):
+    return logsumexp(x, 0.0)
+
+
+def squash_to_log(x):
+    assert x > 0.0
+    return logdiffexp(x, 0.0)
+
 
 def inflate_units(height):
-    return bf.pow(bf.BigFloat(2.0), height/HALF_LIFE)
+    """
+    Log of inflated units.
+    """
+    return height/HALF_LIFE * LOG_TWO
 
-def squash(value):
+def inflate_units2(height):
     """
-    Input: a bigfloat
-    Output: A regular float, after passing through a transformation to reduce the range
+    Squash of inflated units.
     """
-    if value >= 0.0:
-        return float(bf.log(1.0 + value))
-    else:
-        return -float(bf.log(1.0 - value))
-
-def unsquash(value):
-    """
-    The inverse of squash()
-    """
-    if value >= 0.0:
-        return bf.exp(value) - 1.0
-    else:
-        return 1.0 - bf.exp(-value)
+    return log_to_squash(inflate_units(height))
 
 
 def spike_mass(old_deweys, new_deweys):
@@ -68,8 +117,10 @@ class Claim:
         """
         self.claim_hash, self.bid = claim_hash, bid
         self.support_amount = 0
-        huge = inflate_units(height)*spike_mass(0, self.total_deweys)
-        self.trending_score = squash(huge)
+
+        y = spike_mass(0.0, self.total_deweys)
+        self.trending_score = squashed_multiply(inflate_units2(height),
+                                                squash(y))
 
     def claim_update(self, new_bid, height):
         """
@@ -78,20 +129,23 @@ class Claim:
         old_deweys = self.total_deweys
         self.bid = new_bid
 
-        huge = unsquash(self.trending_score)
-        huge += inflate_units(height)*spike_mass(old_deweys, self.total_deweys)
-        self.trending_score = squash(huge)
+        y = spike_mass(old_deweys, self.total_deweys)
+        self.trending_score = squashed_add\
+                                (self.trending_score,
+                                 squashed_multiply(inflate_units2(height), squash(y)))
 
 
     def support_added(self, txo_amount_of_support, height):
         """
-        support_amount is the ADDED support amount
+        txo_amount_of_support is the ADDED support amount
         """
         old_deweys = self.total_deweys
         self.support_amount += txo_amount_of_support
-        huge = unsquash(self.trending_score)
-        huge += inflate_units(height)*spike_mass(old_deweys, self.total_deweys)
-        self.trending_score = squash(huge)
+
+        y = spike_mass(old_deweys, self.total_deweys)
+        self.trending_score = squashed_add\
+                                (self.trending_score,
+                                 squashed_multiply(inflate_units2(height), squash(y)))
 
     def support_abandoned(self, txo_amount_of_support, height):
         """
@@ -99,9 +153,12 @@ class Claim:
         """
         old_deweys = self.total_deweys
         self.support_amount -= txo_amount_of_support
-        huge = unsquash(self.trending_score)
-        huge += inflate_units(height)*spike_mass(old_deweys, self.total_deweys)
-        self.trending_score = squash(huge)
+
+        y = spike_mass(old_deweys, self.total_deweys)
+        self.trending_score = squashed_add\
+                                (self.trending_score,
+                                 squashed_multiply(inflate_units2(height), squash(y)))
+
 
     @property
     def total_deweys(self):
@@ -129,7 +186,6 @@ def simulate():
             claim.support_added(100.0*COIN, height)
         if height % 1000 == 0:
             claim.support_added(100.0*COIN, height)
-            print(height, claim.trending_score)
 
         xs.append(height)
         ys.append(claim.trending_score)
@@ -143,6 +199,22 @@ def simulate():
 
     plt.plot(xs, ys)
     plt.show()
+
+
+def test_squash():
+    import numpy as np
+    import numpy.random as rng
+
+    for _ in range(1000):
+        x, y = 10.0*rng.randn(2)
+        print("(x, y) =", (x, y))
+        result1 = squash(unsquash(x) + unsquash(y))
+        result2 = squashed_add(x, y)
+        print("Should be ~= 0:", result2 - result1)
+        result1 = squash(unsquash(x)*unsquash(y))
+        result2 = squashed_multiply(x, y)
+        print("Should be ~= 0:", result2 - result1)
+        print("")
 
 
 if __name__ == "__main__":
