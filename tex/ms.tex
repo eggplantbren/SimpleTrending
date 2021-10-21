@@ -8,8 +8,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{microtype}
 \usepackage{natbib}
-\newcommand{\given}{\,|\,}
-\newcommand{\asin}{\sinh^{-1}}
+\newcommand{\logsumexp}{\textnormal{logsumexp}}
 
 \title{The LBRY Trending Algorithm}
 \author{Brendon J. Brewer}
@@ -30,7 +29,7 @@ few new features.}
 LBRY needs a trending algorithm to rank claims by `recent popularity',
 preferably using on-chain information such as changes in support. An
 intuitive idea is to have increases and decreases in overall support cause
-a `spike' in the trending score, which then decays exponentially over time
+a `spike' in the trending score, which then fades away over time
 (assuming no further changes occur). This has formed the basis of all the
 implementations that I have written.
 
@@ -45,11 +44,69 @@ and to ensure hub data integrity when a chain reorganisation occurs.
 
 
 \section{Exponentially Decaying Spikes}
+Suppose that, at time (block height) $t$, the total amount of LBC staked
+towards a claim is $\ell_t$, and its trending score is $Y_t$. At height
+$(t+1)$, if the total amount of LBC remains the same, the trending score
+is decayed towards zero:
+\begin{align}
+Y_{t+1} &= kY(t), \label{eqn:decay}
+\end{align}
+where $k$ is a decay constant which we set equal to
+$\exp(-1/576) \approx 0.9982653$, so that the e-folding timescale is 576
+blocks, approximately 24 hours.
+
+If an LBC change occurs, the update is instead
+\begin{align}
+Y_{t+1} &= kY(t) + M(\ell_t, \ell_{t+1}), \label{eqn:decay_with_spike}
+\end{align}
+where the second term is the `mass' of a `trending spike', and depends on
+the old and new LBC values. A simple idea is to set the mass of the trending
+spike equal to the change in LBC:
+\begin{align}
+M(\ell_t, \ell_{t+1}) &= \ell_{t+1} - \ell_t.
+\end{align}
+However, in practice this simple choice might lead to undesirable results.
+Many supports on the LBRY network are created by publishers themselves,
+attempting to boost their own content's visibility. If an item receives
+many organic views and a moderate number of small tips, one might expect it
+to trend, yet with the linear choice for $M$, it will have no hope of
+competing with a `whale' who can deposit 100,000 LBC in support without
+blinking an eye. In Section~\ref{sec:spike_mass}, we simulate several
+different patterns of support, and choose a function $M$ such that
+the size of trending spikes makes `minnows' able to compete with `whales',
+at least to a greater extent than they can with the linear choice.
+
+\section{Nonlinearity --- the Spike Mass Function}\label{sec:spike_mass}
 
 
-\section{Nonlinearity --- the Spike Mass Function}
+\section{Sparsity}
+For most claims, most of the time, nothing happens. However, computing the
+exponential decay using Equation~\ref{eqn:decay} would still incur a cost.
+Right now, there are about 15 million active claims on the LBRY network,
+and the intention is that there might be orders of magnitude more in the
+future. We want to avoid decaying the trending score of 15 million claims
+when nothing has happened to most of them. In the most recent implementation,
+we have found a way to avoid decaying any claims, ever --- only touched claims
+(those whose LBC values changed) ever need any computation.
 
-Let the squashing function be
+\section{The `Squashed' Grade}
+Suppose $x$ is a huge number, where double precision overflow might occur if
+we were to use it in a calculation (this happens at around $10^{308}$).
+If $x$ is positive, we could instead deal with logarithms. Then, to add
+two huge numbers without overflow, we could use
+\begin{align}
+\log(x + y)  &= \log(\exp(\log x) + \exp(\log y)) \\
+             &= \logsumexp(\log x, \log y),
+\end{align}
+where $\logsumexp(a, b) = $.
+
+However,
+logarithms only work for positive $x$, and our trending scores can be
+negative (and zero) as well. In principle, any monotonic function will work
+(and will allow the same total ordering of claims),
+but we need one where arithmetic is possible without overflow.
+
+Instead of $\log$, define a squashing function $S$ as:
 \begin{align}
 S(x) &=
     \left\{
@@ -59,8 +116,24 @@ S(x) &=
         \end{array}
     \right.
 \end{align}
-Operations on the squashed grade can be defined in terms of logsumexp
-and logdiffexp, to avoid overflow.
+The inverse, unsquashing function, is
+\begin{align}
+U(x) = S^{-1}(x) &=
+    \left\{
+        \begin{array}{lr}
+            \exp(x) - 1,  & \textnormal{if } x \geq 0, \\
+            1 - \exp(-x), & \textnormal{otherwise}.
+        \end{array}
+    \right.
+\end{align}
+
+To compute updated trending scores, we need to add values, but on the
+squashed grade. In other words, if we have squashed values $S(x)$ and
+$S(y)$, we will need the squashed sum
+\begin{align}
+S(U(x) + U(y)).
+\end{align}
+These can be worked out in terms of logsumexp and logdiffexp.
 
 
 \end{document}
