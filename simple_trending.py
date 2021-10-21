@@ -3,8 +3,8 @@ import math
 # NOTE: Use deweys for amounts, except in the soften() function where the conversion
 # to LBC is assumed to have already occurred.
 
-HALF_LIFE = 400
 LOG_TWO = math.log(2.0)
+HALF_LIFE = 399.2527760025285
 
 def soften(lbc: float):
     assert lbc >= 0
@@ -208,6 +208,15 @@ def simulate():
     plt.plot(xs, ys)
     plt.show()
 
+def test_jack():
+    claim = Claim("abc", 10*1E8, 99000)
+    print(claim.trending_score)
+    claim.claim_update(100*1E8, 99001)
+    print(claim.trending_score)
+    claim.claim_update(1000000*1E8, 99100)
+    print(claim.trending_score)
+    claim.claim_update(1*1E8, 99200)
+    print(claim.trending_score)
 
 def test_squash():
     import numpy as np
