@@ -11,18 +11,43 @@
 \newcommand{\given}{\,|\,}
 \newcommand{\asin}{\sinh^{-1}}
 
-\title{}
+\title{The LBRY Trending Algorithm}
 \author{Brendon J. Brewer}
 \date{}
 
 \begin{document}
 \maketitle
 
-%\abstract{}
+\abstract{I describe the most recent update to the LBRY trending
+algorithm. The ideas are similar to previous implementations, but with a
+few new features.}
 
 % Need this after the abstract
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{8pt}
+
+\section{Introduction}
+LBRY needs a trending algorithm to rank claims by `recent popularity',
+preferably using on-chain information such as changes in support. An
+intuitive idea is to have increases and decreases in overall support cause
+a `spike' in the trending score, which then decays exponentially over time
+(assuming no further changes occur). This has formed the basis of all the
+implementations that I have written.
+
+All claims, be they streams/files, channels, reposts, or collections, have
+an associated trending score. Hubs (formerly wallet servers) compute and
+save the trending score of every claim along with the other data. Several
+views of content on LBRY Desktop and Odysee involve sorting claims by their
+trending score, in descending order.
+
+In 2021, Jack Robison rewrote a lot of the hub code to improve performance
+and to ensure hub data integrity when a chain reorganisation occurs.
+
+
+\section{Exponentially Decaying Spikes}
+
+
+\section{Nonlinearity --- the Spike Mass Function}
 
 Let the squashing function be
 \begin{align}
