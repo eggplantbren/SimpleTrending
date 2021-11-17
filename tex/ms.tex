@@ -30,7 +30,7 @@ LBRY needs a trending algorithm to rank claims by `recent popularity',
 preferably using on-chain information such as changes in support. An
 intuitive idea is to have increases and decreases in overall support cause
 a `spike' in the trending score, which then fades away over time
-(assuming no further changes occur). This has formed the basis of all the
+(assuming no further changes occur). This idea has formed the basis of all the
 implementations that I have written.
 
 All claims, be they streams/files, channels, reposts, or collections, have
@@ -40,8 +40,10 @@ views of content on LBRY Desktop and Odysee involve sorting claims by their
 trending score, in descending order.
 
 In 2021, Jack Robison rewrote a lot of the hub code to improve performance
-and to ensure hub data integrity when a chain reorganisation occurs.
-
+and to ensure hub data integrity when a chain reorganisation occurs. The
+backend now uses leveldb to store transaction and claim information, and
+Elasticsearch to store claim information in a suitable form for clients to
+query. Leveldb will be replaced with rocksdb soon.
 
 \section{Exponentially Decaying Spikes}
 Suppose that, at time (block height) $t$, the total amount of LBC staked
@@ -77,7 +79,15 @@ the size of trending spikes makes `minnows' able to compete with `whales',
 at least to a greater extent than they can with the linear choice.
 
 \section{Nonlinearity --- the Spike Mass Function}\label{sec:spike_mass}
-Our final choice of spike mass function is
+As briefly discussed in the last section, a linear choice of spike mass
+function might not be ideal. When we choose this function, we are making
+a decision about how significant one amount of LBC at one time is, compared
+to a different amount of LBC at a different time. For example, perhaps
+1000 LBC right now should be considered as
+significant as 10,000 LBC 12 hours ago.
+
+Our final choice of spike mass function is complex. I will describe simpler
+versions at first, which will help in motivating the final, complicated, choice.
 \begin{align}
 M(\ell_t, \ell_{t+1}) &=
 
