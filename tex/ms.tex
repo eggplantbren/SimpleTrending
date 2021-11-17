@@ -9,6 +9,7 @@
 \usepackage{microtype}
 \usepackage{natbib}
 \newcommand{\logsumexp}{\textnormal{logsumexp}}
+\newcommand{\logdiffexp}{\textnormal{logdiffexp}}
 
 \title{The LBRY Trending Algorithm}
 \author{Brendon J. Brewer}
@@ -51,7 +52,7 @@ towards a claim is $\ell_t$, and its trending score is $Y_t$. At height
 $(t+1)$, if the total amount of LBC remains the same, the trending score
 is decayed towards zero:
 \begin{align}
-Y_{t+1} &= kY(t), \label{eqn:decay}
+Y_{t+1} &= kY_t, \label{eqn:decay}
 \end{align}
 where $k$ is a decay constant which we set equal to
 $\exp(-1/576) \approx 0.9982653$, so that the e-folding timescale is 576
@@ -59,7 +60,7 @@ blocks, approximately 24 hours.
 
 If an LBC change occurs, the update is instead
 \begin{align}
-Y_{t+1} &= kY(t) + M(\ell_t, \ell_{t+1}), \label{eqn:decay_with_spike}
+Y_{t+1} &= kY_t + M(\ell_t, \ell_{t+1}), \label{eqn:decay_with_spike}
 \end{align}
 where the second term is the `mass' of a `trending spike', and depends on
 the old and new LBC values. A simple idea is to set the mass of the trending
@@ -100,7 +101,9 @@ as would a change from 1 to 1000 LBC, or 1000 to 1,000,000. It takes more
 LBC to move a mountain than to move a molehill.
 
 With this choice, it wouldn't matter whether a change took place in one large
-step or in smaller increments. Specifically,
+step or in smaller increments\footnote{This would occur with any
+choice of the form $M(x, y) = \Phi(y) - \Phi(x)$ for a monotonic function
+$\Phi()$.}. Specifically,
 \begin{align}
 M(x, y) + M(y, z)
     &= y^{1/3} - x^{1/3} + z^{1/3} - y^{1/3} \\
@@ -113,6 +116,8 @@ this ought to help. A trending algorithm should show what's trending,
 as well as what's recently been boosted.
 
 
+More to come
+
 
 
 \section{Sparsity}
@@ -122,8 +127,36 @@ Right now, there are about 15 million active claims on the LBRY network,
 and the intention is that there might be orders of magnitude more in the
 future. We want to avoid decaying the trending score of 15 million claims
 when nothing has happened to most of them. In the most recent implementation,
-we have found a way to avoid decaying any claims, ever --- only touched claims
+we have devised a way to avoid decaying any claims, ever --- only touched claims
 (those whose LBC values changed) ever need any computation.
+
+The formula for updating a trending score is Equation~\ref{eqn:decay_with_spike}:
+\begin{align}
+Y_{t+1} &= kY_t + M(\ell_t, \ell_{t+1}).
+\end{align}
+However, instead of storing $Y$ for each claim, we could instead store
+a transformed version of it:
+\begin{align}
+Z_t &= Y_t k^{-t}.
+\end{align}
+The updating formula for $Y$ can then be rewritten as
+\begin{align}
+Z_{t+1} k^{t+1} &= kZ_t k^t + M(\ell_t, \ell_{t+1}).
+\end{align}
+Solving for $Z_{t+1}$ gives
+\begin{align}
+Z_{t+1} &= kZ_t k^t k^{-(t+1)} + M(\ell_t, \ell_{t+1})k^{-(t+1)} \\
+        &= Z_t + M(\ell_t, \ell_{t+1})k^{-(t+1)}.
+\end{align}
+Thus, if we maintain $Z$ instead of $Y$, 
+we replace `exponential decay' with maintenance of a constant trending
+score for all untouched claims. As time goes on, the mass of applied spikes
+merely grows exponentially (recall that $k$ is just below 1, so $k$
+raised to a negative power becomes large and positive),
+and that is how recent changes become more significant than old ones.
+
+The only difficulty now is how to add exponentially-large values to touched
+claims while avoiding overflow.
 
 \section{The `Squashed' Grade}
 Suppose $x$ is a huge number, where double precision overflow might occur if
@@ -134,7 +167,23 @@ two huge numbers without overflow, we could use
 \log(x + y)  &= \log(\exp(\log x) + \exp(\log y)) \\
              &= \logsumexp(\log x, \log y),
 \end{align}
-where $\logsumexp(a, b) = $.
+where $\logsumexp$ is given by
+\begin{align}
+\logsumexp(a, b) &= \max(a, b)
+        + \log\left[\exp(a - \max(a, b)) + \exp(b - \max(a, b))\right].
+\end{align}.
+Subtracting the maximum before doing the exponentiation prevents overflow.
+Similarly, differences could be computed on the log scale. Assuming $x>y$,
+we can use the following method:
+\begin{align}
+\log(x - y)  &= \log(\exp(\log x) - \exp(\log y)) \\
+             &= \logdiffexp(\log x, \log y),
+\end{align}
+where $\logdiffexp$ is given by
+\begin{align}
+\logdiffexp(a, b) &= x
+        + \log\left[1.0 - \exp(y - x)\right].
+\end{align}.
 
 However,
 logarithms only work for positive $x$, and our trending scores can be
