@@ -10,6 +10,7 @@
 \usepackage{natbib}
 \newcommand{\logsumexp}{\textnormal{logsumexp}}
 \newcommand{\logdiffexp}{\textnormal{logdiffexp}}
+\newcommand{\sign}{\textnormal{sign}}
 
 \title{The LBRY Trending Algorithm}
 \author{Brendon J. Brewer}
@@ -217,16 +218,39 @@ U(x) = S^{-1}(x) &=
     \right.
 \end{align}
 
-To compute updated trending scores, we need to add values, but on the
-squashed grade. In other words, if we have squashed values $S(x)$ and
-$S(y)$, we will need the squashed sum
+To compute updated trending scores, we need to add and multiply
+values, but on the
+squashed grade. In other words, if we have squashed values $x$ and
+$y$, we will need the squashed sum
 \begin{align}
-S(U(x) + U(y)).
+x \oplus y &= S(U(x) + U(y))
+\end{align}
+and the squashed product
+\begin{align}
+x \otimes y &= S(U(x)U(y)).
 \end{align}
 These can be worked out in terms of logsumexp and logdiffexp.
+The results are fairly complicated and are given in the Appendix.
+
 
 \bibliographystyle{plainnat}
 \bibliography{references.bib/references}
+
+\appendix
+\section{Squashed Arithmetic}
+The squashed addition operator is broken down into four cases, depending
+on the sign of the arguments:
+\begin{align}
+x \oplus y &= \left\{
+    \begin{array}{lr}
+   -\logsumexp(-x, \logdiffexp(-y, 0)),& x < 0~\textnormal{and}~y < 0, \\
+    \logsumexp(x, \logdiffexp(y, 0)),& x \geq 0~\textnormal{and}~y \geq 0 \\
+    \logsumexp(0, \logdiffexp(x, -y)), & \sign(x) \neq \sign(y)~\textnormal{and}~|x| \geq |y|\\
+    -\logsumexp(0, \logdiffexp(-y, x)), & \sign(x) \neq \sign(y)~\textnormal{and}~|x| < |y|
+    \end{array}
+\right. .
+\end{align}
+
 
 \end{document}
 
