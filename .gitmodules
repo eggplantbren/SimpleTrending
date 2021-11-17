@@ -1,0 +1,3 @@
+[submodule "tex/references.bib"]
+	path = tex/references.bib
+	url = https://github.com/eggplantbren/references.bib
