@@ -45,6 +45,9 @@ and to ensure hub data integrity when a chain reorganisation occurs. The
 backend now uses leveldb to store transaction and claim information, and
 Elasticsearch to store claim information in a suitable form for clients to
 query. Leveldb will be replaced with rocksdb soon.
+As part of these changes, trending needed to be made more efficient. This
+meant we made some modifications to it, some of which are pretty neat
+in my opinion.
 
 \section{Exponentially Decaying Spikes}
 Suppose that, at time (block height) $t$, the total amount of LBC staked
@@ -150,13 +153,15 @@ Z_{t+1} &= kZ_t k^t k^{-(t+1)} + M(\ell_t, \ell_{t+1})k^{-(t+1)} \\
 \end{align}
 Thus, if we maintain $Z$ instead of $Y$, 
 we replace `exponential decay' with maintenance of a constant trending
-score for all untouched claims. As time goes on, the mass of applied spikes
+score for all untouched claims --- the formula reduces to $Z_{t+1}=Z_t$.
+As time goes on, the mass of applied spikes
 merely grows exponentially (recall that $k$ is just below 1, so $k$
 raised to a negative power becomes large and positive),
 and that is how recent changes become more significant than old ones.
 
 The only difficulty now is how to add exponentially-large values to touched
-claims while avoiding overflow.
+claims while avoiding overflow. This requires another nonlinear transformation
+which I informally call `squashing'.
 
 \section{The `Squashed' Grade}
 Suppose $x$ is a huge number, where double precision overflow might occur if
