@@ -5,4 +5,5 @@ ms.log
 ms.bbl
 ms.blg
 ms.out
+texput.log
 tex/figures/*.pdf

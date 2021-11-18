@@ -277,7 +277,15 @@ U(x) = S^{-1}(x) &=
 \end{align}
 For large positive values, these are approximately equal to log and exp
 respectively, but for smaller values (and negative values), it remains
-continuous.
+continuous --- see Figure~{fig:squash}.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/squash.pdf}
+\caption{The squashing function $S(x)$ is the solid black curve.
+The dashed blue and pink curves are $\log(x)$ and $-\log(-x)$ respectively.
+\label{fig:squash}}
+\end{figure}
 
 To compute updated trending scores, we need to add and multiply
 values using Equations~\ref{eqn:sparse_update}~and~\ref{eqn:spike_mass}, but on the
