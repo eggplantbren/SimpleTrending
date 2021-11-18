@@ -72,6 +72,17 @@ spike equal to the change in LBC:
 \begin{align}
 M(\ell_t, \ell_{t+1}) &= \ell_{t+1} - \ell_t.
 \end{align}
+For a claim created at height $t=50$ with 1 LBC staked towards it, and then
+later supported with 3 more LBC at height $t=550$, the trending score
+would respond as in Figure~\ref{fig:simple}.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/simple.pdf}
+\caption{An example of how the trending score might vary over time
+for a single claim.\label{fig:simple}}
+\end{figure}
+
 However, in practice this simple choice might lead to undesirable results.
 Many supports on the LBRY network are created by publishers themselves,
 attempting to boost their own content's visibility. If an item receives

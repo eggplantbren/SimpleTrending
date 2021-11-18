@@ -1,0 +1,8 @@
+__pycache__
+ms.pdf
+ms.aux
+ms.log
+ms.bbl
+ms.blg
+ms.out
+tex/figures/*.pdf
