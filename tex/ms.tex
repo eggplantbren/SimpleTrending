@@ -234,8 +234,10 @@ we can use the following method:
 where $\logdiffexp$ is given by
 \begin{align}
 \logdiffexp(a, b) &= a
-        + \log\left[a - \exp(b-a)\right].
+        + \log\left[1 - \exp(b-a)\right]
 \end{align}
+for $a > b$.
+
 However,
 logarithms only work for positive $x$, and our trending scores can be
 negative (and zero) as well. In principle, any monotonic function will work
