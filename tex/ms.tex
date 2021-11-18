@@ -279,8 +279,9 @@ and the squashed product
 \begin{align}
 x \otimes y &= S(U(x)U(y)).
 \end{align}
-These can be worked out in terms of logsumexp and logdiffexp.
-The results are fairly complicated and are given in the Appendix.
+These can be worked out in terms of logsumexp and logdiffexp, and thus can
+be computed relatively easily without overflow.
+The results are given in the Appendix.
 
 In the actual code, we store squashed trending values, i.e., $S(Z)$ in the
 notation of this paper, for every claim. When claims are touched, the
