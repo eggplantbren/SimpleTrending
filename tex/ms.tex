@@ -146,7 +146,7 @@ The two ideas $M_1()$ and $M_2()$ can be merged into a compromise third option,
 as follows:
 \begin{align}
 M_3(\ell_t, \ell_{t+1}) &= M_1(\ell_t, \ell_{t+1})^\alpha
-                           M_2(\ell_t, \ell_{t+1})^{1 - \alpha}.
+                           M_2(\ell_t, \ell_{t+1})^{1 - \alpha}. \label{eqn:spike_mass}
 \end{align}
 This is linear interpolation of $\log M$ values, or alternatively, it is
 `geometric interpolation'. If $\alpha$ is close to 1 then the rule is more
@@ -165,6 +165,9 @@ There is a narrow range over which $\alpha$ is between these two values:
         \right.
 \end{align}
 This completes the specification of the spike mass function.
+
+% TODO: Consider idea of symmetrising by using both old and new LBC values,
+% as this may make reorg safety occur naturally without any extra effort
 
 
 \section{Sparsity}
@@ -193,7 +196,7 @@ Z_{t+1} k^{t+1} &= kZ_t k^t + M(\ell_t, \ell_{t+1}).
 Solving for $Z_{t+1}$ gives
 \begin{align}
 Z_{t+1} &= kZ_t k^t k^{-(t+1)} + M(\ell_t, \ell_{t+1})k^{-(t+1)} \\
-        &= Z_t + M(\ell_t, \ell_{t+1})k^{-(t+1)}.
+        &= Z_t + M(\ell_t, \ell_{t+1})k^{-(t+1)}. \label{eqn:sparse_update}
 \end{align}
 Thus, if we maintain $Z$ instead of $Y$, 
 we replace `exponential decay' with maintenance of a constant trending
@@ -216,11 +219,11 @@ two huge numbers without overflow, we could use
 \log(x + y)  &= \log(\exp(\log x) + \exp(\log y)) \\
              &= \logsumexp(\log x, \log y),
 \end{align}
-where $\logsumexp$ is given by
+where $\logsumexp()$ is given by
 \begin{align}
 \logsumexp(a, b) &= \max(a, b)
         + \log\left[\exp(a - \max(a, b)) + \exp(b - \max(a, b))\right].
-\end{align}.
+\end{align}
 Subtracting the maximum before doing the exponentiation prevents overflow.
 Similarly, differences could be computed on the log scale. Assuming $x>y$,
 we can use the following method:
@@ -230,10 +233,9 @@ we can use the following method:
 \end{align}
 where $\logdiffexp$ is given by
 \begin{align}
-\logdiffexp(a, b) &= x
-        + \log\left[1.0 - \exp(y - x)\right].
-\end{align}.
-
+\logdiffexp(a, b) &= a
+        + \log\left[a - \exp(b-a)\right].
+\end{align}
 However,
 logarithms only work for positive $x$, and our trending scores can be
 negative (and zero) as well. In principle, any monotonic function will work
@@ -260,9 +262,12 @@ U(x) = S^{-1}(x) &=
         \end{array}
     \right.
 \end{align}
+For large positive values, these are approximately equal to log and exp
+respectively, but for smaller values (and negative values), it remains
+continuous.
 
 To compute updated trending scores, we need to add and multiply
-values, but on the
+values using Equations~\ref{eqn:sparse_update}~and~\ref{eqn:spike_mass}, but on the
 squashed grade. In other words, if we have squashed values $x$ and
 $y$, we will need the squashed sum
 \begin{align}
@@ -294,6 +299,13 @@ x \oplus y &= \left\{
 \right. .
 \end{align}
 
+Squashed multiplication is simpler:
+\begin{align}
+x \otimes y &= \sign(xy)
+                \logsumexp\left(
+                    \logdiffexp(|x|, 0) + \logdiffexp(|y|, 0),
+                0\right).
+\end{align}
 
 \end{document}
 
