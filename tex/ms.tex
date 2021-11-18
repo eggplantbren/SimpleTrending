@@ -91,13 +91,14 @@ to a different amount of LBC at a different time. For example, perhaps
 1000 LBC right now should be considered as
 significant as 10,000 LBC 12 hours ago.
 
+\subsection{Change in Softened LBC Amount}
 Our final choice of spike mass function is complex. I will describe simpler
 versions at first, which will help in motivating the final, complicated, choice.
 First, let's look at a choice where the LBC amounts are `softened' by raising
 them to some power less than one (here I have chosen a power of 1/3, in
 previous versions of the algorithm I used 1/4):
 \begin{align}
-M(\ell_t, \ell_{t+1}) &= \ell_{t+1}^{1/3} - \ell_t^{1/3}.
+M_1(\ell_t, \ell_{t+1}) &= \ell_{t+1}^{1/3} - \ell_t^{1/3}.
 \end{align}
 The size of a trending spike here would be the change in the `softened'
 LBC amount. A change from 0 to 1 LBC would give a spike mass of 1,
@@ -109,10 +110,10 @@ step or in smaller increments\footnote{This would occur with any
 choice of the form $M(x, y) = \Phi(y) - \Phi(x)$ for a monotonic function
 $\Phi()$.}. Specifically,
 \begin{align}
-M(x, y) + M(y, z)
+M_1(x, y) + M_1(y, z)
     &= y^{1/3} - x^{1/3} + z^{1/3} - y^{1/3} \\
     &= z^{1/3} - x^{1/3} \\
-    &= M(x, z).
+    &= M_1(x, z).
 \end{align}
 This may not be entirely desirable. Genuinely popular claims on LBRY tend
 to receive several smaller supports, rather than one large one, and intuitively
@@ -120,8 +121,50 @@ this ought to help. A trending algorithm should show what's trending,
 as well as what's recently been boosted.
 
 
-More to come
+\subsection{Softened Change in LBC Amount}
+Instead of applying the power before the subtraction, we could apply the
+subtraction first --- i.e., we could use
+\begin{align}
+M_2(\ell_t, \ell_{t+1}) &= \left(\ell_{t+1} - \ell_t\right)^{1/3}.
+\end{align}
+The subscript 2 distinguishes this choice from $M_1()$ in the previous
+subsection.
+This would make several small supports more effective than one large support,
+in terms of the trending score, a potentially desirable feature:
+\begin{align}
+M_2(x, y) + M_2(y, z)
+    &= (y - x)^{1/3} + (z - y)^{1/3} \\
+    &> (z - x)^{1/3}.
+\end{align}
+The inequality follows from (I don't know --- Jensen's inequality perhaps).
+However, in numerical experiments, we found that this effect was too strong,
+and whales could attain huge heights in trending score by splitting up, say,
+100,000 LBC, into several supports.
 
+\subsection{Interpolation}
+The two ideas $M_1()$ and $M_2()$ can be merged into a compromise third option,
+as follows:
+\begin{align}
+M_3(\ell_t, \ell_{t+1}) &= M_1(\ell_t, \ell_{t+1})^\alpha
+                           M_2(\ell_t, \ell_{t+1})^{1 - \alpha}.
+\end{align}
+This is linear interpolation of $\log M$ values, or alternatively, it is
+`geometric interpolation'. If $\alpha$ is close to 1 then the rule is more
+like $M_1$, if it is close to zero it is more like $M_2$.
+
+What we actually settled on was to have $\alpha \approx 0.5$ when we're dealing
+with low LBC values, and $\alpha = 0.85$ when dealing with higher LBC values.
+There is a narrow range over which $\alpha$ is between these two values:
+\begin{align}
+\alpha &= \left\{
+        \begin{array}{lr}
+            0.5, & \ell_2 \leq 50,\\
+            0.01\ell_2, & 50 < \ell_2 \leq 85,\\
+            0.85, & \textnormal{otherwise}.
+        \end{array}
+        \right.
+\end{align}
+This completes the specification of the spike mass function.
 
 
 \section{Sparsity}
