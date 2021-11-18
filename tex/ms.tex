@@ -282,6 +282,24 @@ x \otimes y &= S(U(x)U(y)).
 These can be worked out in terms of logsumexp and logdiffexp.
 The results are fairly complicated and are given in the Appendix.
 
+In the actual code, we store squashed trending values, i.e., $S(Z)$ in the
+notation of this paper, for every claim. When claims are touched, the
+squashed trending values are updated. At block height 1,000,000, which occurred
+in 2021, unsquashed trending values would have been of order
+\begin{align}
+\exp\left(\frac{10^{6}}{576}\right) &\approx 10^{753}.
+\end{align}
+However, the squashed values are only of order $10^6 / 576 \approx 1736$.
+Differences in squashed trending values, which determine the ordering of claims
+in applications, occur in the third, fourth, and subsequent digits.
+With double precision storage, the situation will remain acceptable for
+centuries. For example, at block height 100 million, expected around 2496 AD,
+squashed trending scores will be around 150,000, with plenty of remaining
+significant digits to allow for sorting.
+
+
+
+
 \section{Acknowledgements}
 BJB would like to thank Kevin Knuth (SUNY Albany) for inspiration.
 
