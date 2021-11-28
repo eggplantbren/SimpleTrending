@@ -167,6 +167,7 @@ class Claim:
 
     def __str__(self):
         return str(dict(claim_hash=self.claim_hash,
+                        bid=self.bid,
                         support_amount=self.support_amount,
                         trending_score=self.trending_score))
 
