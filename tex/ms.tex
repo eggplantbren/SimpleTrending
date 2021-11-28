@@ -302,6 +302,14 @@ These can be worked out in terms of logsumexp and logdiffexp, and thus can
 be computed relatively easily without overflow.
 The results are given in the Appendix.
 
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/response.pdf}
+\caption{An example of how the trending score might vary over time
+for a single claim.\label{fig:response}}
+\end{figure}
+
+
 In the actual code, we store squashed trending values, i.e., $S(Z)$ in the
 notation of this paper, for every claim. When claims are touched, the
 squashed trending values are updated. At block height 1,000,000, which occurred

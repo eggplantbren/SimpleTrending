@@ -44,5 +44,4 @@ plt.plot(xs, ys, label="Original $Y$")
 plt.xlabel("Time $t$ (blocks)")
 plt.ylabel("Trending Score")
 plt.legend()
-plt.show()
-
+plt.savefig("figures/response.pdf")
