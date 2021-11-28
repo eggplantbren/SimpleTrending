@@ -14,15 +14,15 @@ claim = Claim("abc", 1.0*COIN, 1)
 xs, ys = [], []
 xs.append(1.0)
 ys.append(claim.trending_score)
-for height in range(2, 1000):
+for height in range(2, 5000):
 
-    if height == 20:
+    if height == 200:
         claim.support_added(100.0*COIN, height)
 
-    if height == 500:
+    if height == 1200:
         claim.support_added(1000.0*COIN, height)
 
-    if height == 700:
+    if height == 1500:
         claim.support_abandoned(1000.0*COIN, height)
 
     xs.append(height)
