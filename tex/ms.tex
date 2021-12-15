@@ -13,7 +13,7 @@
 \newcommand{\sign}{\textnormal{sign}}
 
 \title{The LBRY Trending Algorithm}
-\author{Brendon J. Brewer}
+\author{Brendon J. Brewer and Jack Robison}
 \date{}
 
 \begin{document}
@@ -32,8 +32,10 @@ LBRY \citep{li2020lbry} needs a trending algorithm to rank claims by `recent pop
 preferably using on-chain information such as changes in support. An
 intuitive idea is to have increases and decreases in overall support cause
 a `spike' in the trending score, which then fades away over time
-(assuming no further changes occur). This idea has formed the basis of all the
-implementations that I have written.
+(assuming no further changes occur). This idea, which corresponds to
+AR(1) time series in statistics \citep{brockwell2009time}
+has formed the basis of all the implementations I have written --- though
+other implementations have also existed in the past.
 
 All claims, be they streams/files, channels, reposts, or collections, have
 an associated trending score. Hubs (formerly wallet servers) compute and
@@ -42,7 +44,7 @@ views of content on LBRY Desktop and Odysee involve sorting claims by their
 trending score, in descending order.
 
 In 2021, Jack Robison rewrote a lot of the hub code to improve performance
-and to ensure hub data integrity when a chain reorganisation occurs. The
+and to ensure hub data integrity when a blockchain reorganisation occurs. The
 backend now uses leveldb to store transaction and claim information, and
 Elasticsearch to store claim information in a suitable form for clients to
 query. Leveldb will be replaced with rocksdb soon.
@@ -177,9 +179,14 @@ There is a narrow range over which $\alpha$ is between these two values:
 \end{align}
 This completes the specification of the spike mass function.
 
-% TODO: Consider idea of symmetrising by using both old and new LBC values,
-% as this may make reorg safety occur naturally without any extra effort
 
+{\bf TODO}: Consider idea of symmetrising by using both old and new LBC values,
+as this may make reorg safety occur naturally without any extra effort
+
+{\bf TODO}: Show the response of the trending score to different patterns
+of support.
+
+{\bf TODO}: Bring time delays back in, and write about why.
 
 \section{Sparsity}
 For most claims, most of the time, nothing happens. However, computing the
@@ -248,6 +255,8 @@ where $\logdiffexp$ is given by
         + \log\left[1 - \exp(b-a)\right]
 \end{align}
 for $a > b$.
+If we were to use logarithms, all orderings would remain the same, since
+log is a monotonic function \citep{knuth2019lattices}.
 
 However,
 logarithms only work for positive $x$, and our trending scores can be
@@ -306,7 +315,13 @@ The results are given in the Appendix.
 \centering
 \includegraphics[width=0.7\textwidth]{figures/response.pdf}
 \caption{An example of how the trending score might vary over time
-for a single claim.\label{fig:response}}
+for a single claim. The green curve shows $Y(t)$ which illustrates
+the `exponentially decaying spikes' concept. The orange curve
+shows $Z(t)$ which uses the sparse representation, so the trending
+score remains constant whenever nothing happens to the claim.
+Finally, the blue curve shows $S(Z(t))$, after the squashing
+function is applied to prevent overflow. This is what the hub server
+actually computes.\label{fig:response}}
 \end{figure}
 
 
@@ -329,7 +344,8 @@ significant digits to allow for sorting.
 
 
 \section{Acknowledgements}
-BJB would like to thank Kevin Knuth (SUNY Albany) for inspiration.
+BJB would like to thank Kevin Knuth (SUNY Albany) for inspiration, and the
+LBRY Inc staff for building such a cool thing.
 
 \bibliographystyle{plainnat}
 \bibliography{references.bib/references}
